@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Krater</title>
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" href="/assets/icon-192.png" />
+    <link rel="apple-touch-icon" href="/assets/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="game"></div>
+
+    <div id="credits">
+      Harita: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
+    </div>
+
+    <div id="nickname-overlay" hidden>
+      <form id="nickname-form">
+        <label for="nickname-input">Takma adın</label>
+        <input id="nickname-input" type="text" maxlength="24" autocomplete="off" placeholder="Misafir" />
+        <button type="submit">Gir</button>
+      </form>
+    </div>
+
+    <div id="minimap"><div id="mm-marker"></div></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

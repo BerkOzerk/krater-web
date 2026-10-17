@@ -1,0 +1,103 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  height: 100dvh;
+  background: #000;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+}
+
+#game canvas {
+  display: block;
+}
+
+#credits {
+  position: fixed;
+  right: 6px;
+  bottom: 4px;
+  font: 11px sans-serif;
+  color: #999;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 5;
+}
+
+#credits a {
+  color: #bbb;
+}
+
+/* --- Takma ad istemi (M1) --- */
+#nickname-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+#nickname-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #111;
+  border: 2px solid #333;
+  padding: 20px 24px;
+  border-radius: 8px;
+  color: #eee;
+  font: 14px sans-serif;
+}
+
+#nickname-input {
+  font-size: 16px; /* iOS otomatik yakınlaşmasını önler */
+  padding: 8px;
+  background: #222;
+  border: 1px solid #444;
+  color: #eee;
+  border-radius: 4px;
+}
+
+#nickname-form button {
+  font-size: 16px;
+  padding: 8px;
+  background: #2a6;
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+}
+
+/* --- Minimap (M1) — Unity MiniMap panelinin birebir portu --- */
+#minimap {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  width: 170px;
+  height: 134px;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 5;
+}
+
+#minimap::before {
+  content: "";
+  position: absolute;
+  inset: 4px 5px;
+  background: url("/assets/harita_zemin_gb.png") center / 160px 126px no-repeat;
+  image-rendering: pixelated;
+}
+
+#mm-marker {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #ff4444;
+}
