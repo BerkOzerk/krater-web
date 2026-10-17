@@ -46,6 +46,11 @@ body {
   z-index: 10;
 }
 
+/* display:flex, hidden özniteliğini ezer — açıkça kapatmak şart */
+#nickname-overlay[hidden] {
+  display: none;
+}
+
 #nickname-form {
   display: flex;
   flex-direction: column;

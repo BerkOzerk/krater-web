@@ -23,4 +23,4 @@ export const CAM_LERP = 8; // Unity CameraFollow.follow
 
 export const WS_URL = import.meta.env.DEV
   ? "ws://127.0.0.1:8787/ws"
-  : "wss://krater-server.berkozerk.workers.dev/ws"; // M4'te workers.dev URL'i ile güncellenecek
+  : "wss://krater-server.krater-server.workers.dev/ws"; // Garproject Cloudflare hesabı
