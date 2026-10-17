@@ -110,7 +110,8 @@ export class GameScene extends Phaser.Scene {
 
   override update(_time: number, delta: number) {
     this.player.update();
-    this.remotes.update(delta);
+    // remotes yalnızca onReady'den sonra var (takma ad akışı öncesinde update çalışır)
+    this.remotes?.update(delta);
 
     // Unity CameraFollow: lerp 8 — kamera doğrudan scroll üzerinden (Matter gövdesi GameObject değil)
     const cam = this.cameras.main;
@@ -128,7 +129,7 @@ export class GameScene extends Phaser.Scene {
     const p = this.player.body.position;
     const dist = Math.abs(p.x - this.lastSent.x) + Math.abs(p.y - this.lastSent.y);
     const stopped = this.player.body.velocity.x === 0 && this.player.body.velocity.y === 0;
-    if (this.net.open && dist > 1 && (this.time.now - this.lastSend >= 100 || stopped)) {
+    if (this.net?.open && dist > 1 && (this.time.now - this.lastSend >= 100 || stopped)) {
       this.lastSend = this.time.now;
       this.lastSent = { x: p.x, y: p.y };
       this.net.send({ t: "move", x: p.x, y: p.y });
