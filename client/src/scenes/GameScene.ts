@@ -31,16 +31,28 @@ export class GameScene extends Phaser.Scene {
     this.add.image(0, 0, "map").setOrigin(0, 0);
     addCollisions(this);
 
-    // Yer tutucu dokular: kırmızı = yerel, beyaz = uzak (tint ile renklenecek)
+    // Yer tutucu dokular: kırmızı = yerel, açık = uzak (tint ile renklenecek).
+    // DİKKAT: Graphics.generateTexture create() içinde (ilk render öncesi) GL'ye
+    // yüklenmez — dokular ekranda çizilmez. createCanvas + refresh kanıtlı yöntemdir.
     if (!this.textures.exists("player")) {
-      const g = this.add.graphics();
-      g.fillStyle(0xe04040, 1);
-      g.fillRect(0, 0, 16, 24);
-      g.generateTexture("player", 16, 24);
-      g.fillStyle(0xffffff, 1);
-      g.fillRect(0, 0, 16, 24);
-      g.generateTexture("player_w", 16, 24);
-      g.destroy();
+      const make = (key: string, body: string) => {
+        const t = this.textures.createCanvas(key, 16, 24);
+        if (!t) return;
+        const c = t.getContext();
+        c.fillStyle = body;
+        c.fillRect(1, 1, 14, 22); // gövde
+        c.fillStyle = "#222222"; // kontur
+        c.fillRect(0, 0, 16, 2);
+        c.fillRect(0, 22, 16, 2);
+        c.fillRect(0, 2, 1, 20);
+        c.fillRect(15, 2, 1, 20);
+        c.fillStyle = "#ffffff"; // gözler
+        c.fillRect(4, 6, 3, 3);
+        c.fillRect(9, 6, 3, 3);
+        t.refresh();
+      };
+      make("player", "#e04040");
+      make("player_w", "#f0f0f0");
     }
 
     this.player = new LocalPlayer(this);
@@ -113,11 +125,13 @@ export class GameScene extends Phaser.Scene {
     // remotes yalnızca onReady'den sonra var (takma ad akışı öncesinde update çalışır)
     this.remotes?.update(delta);
 
-    // Unity CameraFollow: lerp 8 — kamera doğrudan scroll üzerinden (Matter gövdesi GameObject değil)
+    // Unity CameraFollow: lerp 8 — kamera doğrudan scroll üzerinden (Matter gövdesi GameObject değil).
+    // DİKKAT: Phaser'da scroll + width/2 = ekran merkezinin DÜNYA koordinatı (zoom'suz).
+    // width/(2*zoom) yazmak kamerayı oyuncudan uzağa sürükler — karakter ekran dışına düşer.
     const cam = this.cameras.main;
     const k = Math.min(1, (delta / 1000) * CAM_LERP);
-    const tx = this.player.body.position.x - cam.width / (2 * cam.zoom);
-    const ty = this.player.body.position.y - cam.height / (2 * cam.zoom);
+    const tx = this.player.body.position.x - cam.width / 2;
+    const ty = this.player.body.position.y - cam.height / 2;
     cam.setScroll(
       cam.scrollX + (tx - cam.scrollX) * k,
       cam.scrollY + (ty - cam.scrollY) * k

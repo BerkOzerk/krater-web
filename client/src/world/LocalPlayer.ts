@@ -30,7 +30,8 @@ export class LocalPlayer {
     });
     this.body.inertia = Infinity; // dönme yok
 
-    this.sprite = scene.add.image(SPAWN.x, SPAWN.y, "player").setOrigin(0.5, 1).setDepth(2);
+    // depth 10: uzak oyuncuların (1-2) ÜSTÜNDE — aynı spawn'da üst üste binse bile görünür
+    this.sprite = scene.add.image(SPAWN.x, SPAWN.y, "player").setOrigin(0.5, 1).setDepth(10);
 
     scene.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
       this.target = { x: p.worldX, y: p.worldY };

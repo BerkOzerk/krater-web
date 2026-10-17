@@ -21,7 +21,7 @@ export class RemotePlayers {
       .image(p.x, p.y, "player_w")
       .setOrigin(0.5, 1)
       .setTint(color)
-      .setDepth(2);
+      .setDepth(2); // yerel oyuncu (10) ve isim etiketlerinin (4) altında
     const tag = this.scene.add
       .text(p.x, p.y - 26, p.name, {
         fontSize: "14px",
@@ -30,7 +30,7 @@ export class RemotePlayers {
         strokeThickness: 3,
       })
       .setOrigin(0.5, 1)
-      .setDepth(3);
+      .setDepth(4);
     this.remotes.set(p.id, { sprite, tag, tx: p.x, ty: p.y });
   }
 
