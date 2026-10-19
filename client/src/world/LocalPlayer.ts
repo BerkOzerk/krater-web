@@ -20,8 +20,10 @@ export class LocalPlayer {
   readonly sprite: Phaser.GameObjects.Image;
   private target: { x: number; y: number } | null = null;
   private keys: Keys;
+  private scene: Phaser.Scene;
 
   constructor(scene: Phaser.Scene) {
+    this.scene = scene;
     this.body = scene.matter.add.rectangle(SPAWN.x, SPAWN.y, BOX, BOX, {
       friction: 0,
       frictionStatic: 0,
@@ -80,8 +82,12 @@ export class LocalPlayer {
       }
     }
 
-    this.body.velocity.x = vx;
-    this.body.velocity.y = vy;
+    // DİKKAT: doğrudan body.velocity ataması İŞLEMEZ — Matter'ın Body.update'i hızı
+    // konum farkından (positionPrev) yeniden hesaplar ve ezer. MatterPhysics.setVelocity
+    // üzerinden gitmek şart; ÜSTELİK argümanı "px/ADIM" birimindedir (adım = 1/60 sn) —
+    // saniyelik hızı 60'a bölmeden geçirmek 60× hız patlaması üretir.
+    const STEP = 1 / 60;
+    this.scene.matter.setVelocity(this.body, vx * STEP, vy * STEP);
     if (vx !== 0) this.sprite.setFlipX(vx < 0);
     this.sprite.setPosition(this.body.position.x, this.body.position.y);
   }

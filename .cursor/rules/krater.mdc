@@ -51,6 +51,7 @@ Tarayıcı otomasyonu (regresyon): `$TEMP/krater-matter-test` içinde puppeteer 
 12. **Phaser WASD/ok/boşluk yakalaması:** KeyboardPlugin bu tuşları varsayılan yakalar (preventDefault) — DOM input'a bu karakterler HİÇ düşmez ("Ahmet" → "hmet"). Takma ad girişi süresince `input.keyboard.clearCaptures()`, bitince `addCapture([UP,DOWN,LEFT,RIGHT,SPACE,W,A,S,D])` (GameScene'de uygulanıyor).
 13. **DOM overlay ekran koordinatı:** `(world - cam.worldView.x) * zoom` kullan (scroll DEĞİL). `worldView.x = scroll + width/2 - displayWidth/2`. Yanlış formül overlay'leri ekran dışına atar.
 14. **Phaser 3.60+ input'u pencere seviyesinde dinler:** DOM UI (popover butonları vb.) üzerindeki tıklamalar bile `map.on('pointerdown')`'a düşer — kart buton tıklamasının ORTASINDA kapanır. Harita handler'ında `event.target` canvas mı diye guard şart (GameScene'de uygulanıyor).
+15. **Matter hız birimi = px/ADIM (1/60 sn):** (a) `body.velocity`'ye doğrudan atama İŞLEMEZ (Body.update konum farkından ezer) — `scene.matter.setVelocity(body, x, y)` kullan; (b) o da saniyelik hız DEĞİL, adım başına yer değiştirme bekler — saniyelik hızı 60'a BÖL (`vx / 60`), yoksa 60× hız patlaması. (c) `scene.matter.body.setVelocity` DEĞİL (o Body modülü, vektör bekler → NaN).
 
 ## Yol haritası
 
