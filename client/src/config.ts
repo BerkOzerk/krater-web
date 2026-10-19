@@ -24,3 +24,12 @@ export const CAM_LERP = 8; // Unity CameraFollow.follow
 export const WS_URL = import.meta.env.DEV
   ? "ws://127.0.0.1:8787/ws"
   : "wss://krater-server.krater-server.workers.dev/ws"; // Garproject Cloudflare hesabı
+
+// ---- GPS modu (G1) ----
+export const GPS_FUZZ_M = 10; // gizlilik: konum 10 m'lik ızgaraya nicele
+export const GPS_UTM_OX = 575867.03; // harita çerçevesi (carpisma.json orijiniyle aynı)
+export const GPS_UTM_OY = 4388840.62;
+export const GPS_CAL = { dx: 0, dy: 0 }; // görsel kalibrasyon (metre; kullanıcı doğrularsa ayarlanır)
+
+export const AFK_MS = 30_000; // bu kadar hareketsizlik = uzakta (F2b)
+export const WALK_ANIM_MS = 200; // 2 karelik yürüme döngüsü periyodu

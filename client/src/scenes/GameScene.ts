@@ -8,6 +8,7 @@ import { getIdentity, promptNickname } from "../ui/nickname";
 import { Net } from "../net/ws";
 import { RemotePlayers } from "../net/RemotePlayers";
 import { Social } from "../ui/social";
+import { Gps, GpsState } from "../gps";
 
 export class GameScene extends Phaser.Scene {
   private player!: LocalPlayer;
@@ -15,6 +16,9 @@ export class GameScene extends Phaser.Scene {
   private remotes!: RemotePlayers;
   private net!: Net;
   private social!: Social;
+  private gps!: Gps;
+  private gpsMode: GpsState = "off";
+  private debugG: Phaser.GameObjects.Graphics | null = null;
   private myId = "";
   private myName = "";
   private lastSend = 0;
@@ -36,13 +40,20 @@ export class GameScene extends Phaser.Scene {
     // Yer tutucu dokular: kırmızı = yerel, açık = uzak (tint ile renklenecek).
     // DİKKAT: Graphics.generateTexture create() içinde (ilk render öncesi) GL'ye
     // yüklenmez — dokular ekranda çizilmez. createCanvas + refresh kanıtlı yöntemdir.
+    // F2b: 2 karelik yürüme döngüsü — idle (bacaklar bitişik) + walk (bacaklar açık).
     if (!this.textures.exists("player")) {
-      const make = (key: string, body: string) => {
+      const make = (key: string, body: string, walk: boolean) => {
         const t = this.textures.createCanvas(key, 16, 24);
         if (!t) return;
         const c = t.getContext();
         c.fillStyle = body;
-        c.fillRect(1, 1, 14, 22); // gövde
+        if (walk) {
+          c.fillRect(1, 1, 14, 18); // gövde (kısa)
+          c.fillRect(3, 19, 4, 4); // sol bacak
+          c.fillRect(9, 19, 4, 4); // sağ bacak
+        } else {
+          c.fillRect(1, 1, 14, 22); // gövde
+        }
         c.fillStyle = "#222222"; // kontur
         c.fillRect(0, 0, 16, 2);
         c.fillRect(0, 22, 16, 2);
@@ -53,8 +64,10 @@ export class GameScene extends Phaser.Scene {
         c.fillRect(9, 6, 3, 3);
         t.refresh();
       };
-      make("player", "#e04040");
-      make("player_w", "#f0f0f0");
+      make("player", "#e04040", false);
+      make("player_walk", "#e04040", true);
+      make("player_w", "#f0f0f0", false);
+      make("player_wwalk", "#f0f0f0", true);
     }
 
     this.player = new LocalPlayer(this);
@@ -73,7 +86,8 @@ export class GameScene extends Phaser.Scene {
       const t = (p.event as PointerEvent | undefined)?.target as Node | undefined;
       if (t && t !== this.game.canvas && !this.game.canvas.contains(t)) return;
       this.social.closePopover();
-      this.player.setTarget(p.worldX, p.worldY);
+      if (this.gpsMode === "inside") return; // GPS modunda elle yürüyüş kapalı
+      this.player.setTargetWithPath(p.worldX, p.worldY); // F2c: A* ile dolan
     });
 
     const cam = this.cameras.main;
@@ -86,6 +100,7 @@ export class GameScene extends Phaser.Scene {
 
     if (new URLSearchParams(location.search).has("debug")) {
       this.matter.world.createDebugGraphic();
+      this.debugG = this.add.graphics().setDepth(60); // F2c: yol çizimi
     }
 
     // Login'siz kimlik: varsa takma adla başla, yoksa önce sor
@@ -96,10 +111,61 @@ export class GameScene extends Phaser.Scene {
     this.social = new Social(
       this,
       this.myId,
-      (to, e) => this.net?.send({ t: "react", to, e }),
+      (to, e) => {
+        if (this.gpsMode === "outside") return; // seyirci: tepki kapalı (mesajlaşma yok)
+        this.net?.send({ t: "react", to, e });
+      },
       (pid) => (pid === this.myId ? this.player.sprite : (this.remotes?.spriteOf(pid) ?? null))
     );
     this.social.setCount(1);
+
+    // G1: GPS modu — buton aç/kapat; içerideysen gerçek konumda yürü, dışarıdaysan seyirci
+    const gpsBtn = document.getElementById("gps-btn")!;
+    this.gps = new Gps();
+    this.gps.onState = (s) => {
+      this.gpsMode = s;
+      if (s === "inside") {
+        gpsBtn.textContent = "📍 İçeridesin (kapat)";
+      } else if (s === "outside") {
+        gpsBtn.textContent = "📍 Dışarıdasın — seyirci (kapat)";
+      } else if (s === "error") {
+        gpsBtn.textContent = "📍 Konum izni yok";
+      } else {
+        gpsBtn.textContent = "📍 Konumumu aç";
+      }
+    };
+    let gpsPrevInside = false;
+    this.gps.onFix = (x, y, inside) => {
+      if (inside) {
+        if (this.player.sprite.visible === false) this.player.sprite.setVisible(true);
+        if (!gpsPrevInside) this.teleport(x, y); // ilk giriş: gerçek konumda belir
+        this.player.setTarget(x, y); // sonraki güncellemeler: yumuşak takip
+      } else {
+        // Dışarıda: karakter yok, Gar önünde park et (başkaları nötr noktada görür)
+        this.player.sprite.setVisible(false);
+        this.teleport(SPAWN.x, SPAWN.y);
+        const p = this.player.body.position;
+        this.net?.send({ t: "move", x: p.x, y: p.y });
+      }
+      gpsPrevInside = inside;
+    };
+    gpsBtn.addEventListener("click", () => {
+      if (this.gpsMode === "off" || this.gpsMode === "error") {
+        this.gps.start();
+      } else {
+        this.gps.stop();
+        this.player.sprite.setVisible(true);
+        this.player.setTarget(this.player.body.position.x, this.player.body.position.y);
+      }
+    });
+    document.addEventListener("visibilitychange", () => {
+      // pil + gizlilik: sekme arka plana geçince GPS durur, görünürse geri başlar
+      if (document.hidden && this.gpsMode !== "off" && this.gpsMode !== "error") {
+        this.gps.stop();
+        this.gpsMode = "off";
+        gpsBtn.textContent = "📍 Konumumu aç";
+      }
+    });
 
     if (name) {
       this.myName = name;
@@ -116,6 +182,16 @@ export class GameScene extends Phaser.Scene {
         this.onReady();
       });
     }
+  }
+
+  private teleport(x: number, y: number): void {
+    const b = this.player.body;
+    b.position.x = x;
+    b.position.y = y;
+    b.positionPrev.x = x;
+    b.positionPrev.y = y;
+    b.velocity.x = 0;
+    b.velocity.y = 0;
   }
 
   private onReady(): void {
@@ -163,9 +239,35 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number) {
-    this.player.update();
+    this.player.update(delta);
     // remotes yalnızca onReady'den sonra var (takma ad akışı öncesinde update çalışır)
     this.remotes?.update(delta);
+
+    // F2c: ?debug=1 ise son yolu çiz
+    if (this.debugG && this.player.lastPath.length > 1) {
+      this.debugG.clear();
+      this.debugG.lineStyle(2, 0xffff00, 0.9);
+      this.debugG.beginPath();
+      for (let i = 0; i < this.player.lastPath.length; i++) {
+        const p = this.player.lastPath[i]!;
+        if (i === 0) this.debugG.moveTo(p.x, p.y);
+        else this.debugG.lineTo(p.x, p.y);
+      }
+      this.debugG.strokePath();
+    }
+
+    // F2b: yerel AFK — soluk sprite + "uzakta" etiketi
+    const afk = this.player.isAfk();
+    this.player.sprite.setAlpha(afk ? 0.4 : 1);
+    const afkEl = document.getElementById("afk-label")!;
+    if (afk) {
+      afkEl.hidden = false;
+      const cam = this.cameras.main;
+      afkEl.style.left = (this.player.sprite.x - cam.worldView.x) * cam.zoom + "px";
+      afkEl.style.top = (this.player.sprite.y - 24 - cam.worldView.y) * cam.zoom + "px";
+    } else {
+      afkEl.hidden = true;
+    }
 
     // Unity CameraFollow: lerp 8 — kamera doğrudan scroll üzerinden (Matter gövdesi GameObject değil).
     // DİKKAT: Phaser'da scroll + width/2 = ekran merkezinin DÜNYA koordinatı (zoom'suz).

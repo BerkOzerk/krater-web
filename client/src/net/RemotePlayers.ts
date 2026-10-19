@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { AFK_MS, WALK_ANIM_MS } from "../config";
 import type { PlayerState } from "../../../shared/protocol";
 
 type Remote = {
@@ -8,6 +9,8 @@ type Remote = {
   t0: number; // bu oturumda ilk görüldüğü zaman (oyuncu kartı için)
   tx: number;
   ty: number;
+  lastMove: number; // AFK tespiti (F2b)
+  animT: number;
 };
 
 type OnTap = (id: string, name: string, t0: number, screenX: number, screenY: number) => void;
@@ -43,7 +46,16 @@ export class RemotePlayers {
       })
       .setOrigin(0.5, 1)
       .setDepth(4);
-    this.remotes.set(p.id, { sprite, tag, name: p.name, t0: Date.now(), tx: p.x, ty: p.y });
+    this.remotes.set(p.id, {
+      sprite,
+      tag,
+      name: p.name,
+      t0: Date.now(),
+      tx: p.x,
+      ty: p.y,
+      lastMove: Date.now(),
+      animT: 0,
+    });
   }
 
   move(id: string, x: number, y: number): void {
@@ -51,6 +63,7 @@ export class RemotePlayers {
     if (r) {
       r.tx = x;
       r.ty = y;
+      r.lastMove = Date.now();
     }
   }
 
@@ -77,10 +90,22 @@ export class RemotePlayers {
 
   update(delta: number): void {
     const k = Math.min(1, (delta / 1000) * 10);
+    const now = Date.now();
     for (const r of this.remotes.values()) {
       r.sprite.x += (r.tx - r.sprite.x) * k;
       r.sprite.y += (r.ty - r.sprite.y) * k;
       r.tag.setPosition(r.sprite.x, r.sprite.y - 26);
+
+      // F2b: uzaklar için yürüme animasyonu + AFK soluklaştırma (protokol değişikliği yok)
+      const moving = Math.abs(r.tx - r.sprite.x) > 0.5 || Math.abs(r.ty - r.sprite.y) > 0.5;
+      r.animT += delta;
+      if (moving && r.animT > WALK_ANIM_MS) {
+        r.animT = 0;
+        r.sprite.setTexture(r.sprite.texture.key === "player_w" ? "player_wwalk" : "player_w");
+      } else if (!moving && r.sprite.texture.key !== "player_w") {
+        r.sprite.setTexture("player_w");
+      }
+      r.sprite.setAlpha(now - r.lastMove > AFK_MS ? 0.4 : 1);
     }
   }
 }
