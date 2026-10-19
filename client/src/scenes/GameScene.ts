@@ -7,12 +7,14 @@ import { Minimap } from "../ui/minimap";
 import { getIdentity, promptNickname } from "../ui/nickname";
 import { Net } from "../net/ws";
 import { RemotePlayers } from "../net/RemotePlayers";
+import { Social } from "../ui/social";
 
 export class GameScene extends Phaser.Scene {
   private player!: LocalPlayer;
   private minimap!: Minimap;
   private remotes!: RemotePlayers;
   private net!: Net;
+  private social!: Social;
   private myId = "";
   private myName = "";
   private lastSend = 0;
@@ -28,7 +30,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(0, 0, "map").setOrigin(0, 0);
+    const map = this.add.image(0, 0, "map").setOrigin(0, 0);
     addCollisions(this);
 
     // Yer tutucu dokular: kırmızı = yerel, açık = uzak (tint ile renklenecek).
@@ -58,6 +60,22 @@ export class GameScene extends Phaser.Scene {
     this.player = new LocalPlayer(this);
     this.minimap = new Minimap();
 
+    // Tıkla-yürü: HARİTA görseline bağlı — uzak oyuncuya tıklamak yürüyüş başlatmaz,
+    // o tıklamayı sprite'ın kendi interaktif alanı (oyuncu kartı) yakalar.
+    map.setInteractive(
+      new Phaser.Geom.Rectangle(0, 0, WORLD_W, WORLD_H),
+      Phaser.Geom.Rectangle.Contains
+    );
+    map.on("pointerdown", (p: Phaser.Input.Pointer) => {
+      // Phaser 3.60+ input'u pencere seviyesinde dinler: DOM UI üzerindeki tıklamalar da
+      // buraya düşer (popover butonları dahil). Yalnızca canvas'tan gelenleri işle —
+      // yoksa kart, buton tıklamasının ortasında kapanır ve buton hiç çalışmaz.
+      const t = (p.event as PointerEvent | undefined)?.target as Node | undefined;
+      if (t && t !== this.game.canvas && !this.game.canvas.contains(t)) return;
+      this.social.closePopover();
+      this.player.setTarget(p.worldX, p.worldY);
+    });
+
     const cam = this.cameras.main;
     cam.setBounds(0, 0, WORLD_W, WORLD_H);
     cam.centerOn(SPAWN.x, SPAWN.y);
@@ -73,11 +91,27 @@ export class GameScene extends Phaser.Scene {
     // Login'siz kimlik: varsa takma adla başla, yoksa önce sor
     const { id, name } = getIdentity();
     this.myId = id;
+
+    // F2a: sayac + oyuncu karti + emoji balonu
+    this.social = new Social(
+      this,
+      this.myId,
+      (to, e) => this.net?.send({ t: "react", to, e }),
+      (pid) => (pid === this.myId ? this.player.sprite : (this.remotes?.spriteOf(pid) ?? null))
+    );
+    this.social.setCount(1);
+
     if (name) {
       this.myName = name;
       this.onReady();
     } else {
+      // KRİTİK: Phaser WASD + ok tuşları + boşluğu varsayılan yakalar (preventDefault) —
+      // bu karakterler takma ad girdisine hiç düşmez ("Ahmet" → "hmet"). Giriş süresince
+      // yakalamayı kapat, bitince geri aç.
+      this.input.keyboard!.clearCaptures();
       promptNickname((n) => {
+        const K = Phaser.Input.Keyboard.KeyCodes;
+        this.input.keyboard!.addCapture([K.UP, K.DOWN, K.LEFT, K.RIGHT, K.SPACE, K.W, K.A, K.S, K.D]);
         this.myName = n;
         this.onReady();
       });
@@ -85,7 +119,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onReady(): void {
-    this.remotes = new RemotePlayers(this);
+    this.remotes = new RemotePlayers(this, (id, name, t0, sx, sy) =>
+      this.social.openPopover(id, name, t0, sx, sy)
+    );
     this.net = new Net(WS_URL, {
       onOpen: () => {
         this.net.send({ t: "join", id: this.myId, name: this.myName });
@@ -105,15 +141,21 @@ export class GameScene extends Phaser.Scene {
       case "welcome":
         this.remotes.reset();
         for (const p of m.players) this.remotes.add(p);
+        this.social.setCount(this.remotes.size() + 1);
         break;
       case "join":
         this.remotes.add(m.p);
+        this.social.setCount(this.remotes.size() + 1);
         break;
       case "move":
         this.remotes.move(m.id, m.x, m.y);
         break;
+      case "react":
+        this.social.showBubble(m.to, m.e);
+        break;
       case "leave":
         this.remotes.remove(m.id);
+        this.social.setCount(this.remotes.size() + 1);
         break;
       case "pong":
         break;

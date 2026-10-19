@@ -4,15 +4,23 @@ import type { PlayerState } from "../../../shared/protocol";
 type Remote = {
   sprite: Phaser.GameObjects.Image;
   tag: Phaser.GameObjects.Text;
+  name: string;
+  t0: number; // bu oturumda ilk görüldüğü zaman (oyuncu kartı için)
   tx: number;
   ty: number;
 };
 
+type OnTap = (id: string, name: string, t0: number, screenX: number, screenY: number) => void;
+
 // Uzak oyuncular: yalnız sprite (Matter gövdesi YOK — hayalet), düz lerp ile yumuşatma.
+// Sprite'lar interaktif: tıklanınca oyuncu kartı popover'ı açılır (F2a).
 export class RemotePlayers {
   private remotes = new Map<string, Remote>();
 
-  constructor(private scene: Phaser.Scene) {}
+  constructor(
+    private scene: Phaser.Scene,
+    private onTap?: OnTap
+  ) {}
 
   add(p: PlayerState): void {
     if (this.remotes.has(p.id)) return;
@@ -21,7 +29,11 @@ export class RemotePlayers {
       .image(p.x, p.y, "player_w")
       .setOrigin(0.5, 1)
       .setTint(color)
-      .setDepth(2); // yerel oyuncu (10) ve isim etiketlerinin (4) altında
+      .setDepth(2) // yerel oyuncu (10) ve isim etiketlerinin (4) altında
+      .setInteractive({ useHandCursor: true });
+    sprite.on("pointerdown", (ptr: Phaser.Input.Pointer) => {
+      this.onTap?.(p.id, p.name, Date.now(), ptr.position.x, ptr.position.y);
+    });
     const tag = this.scene.add
       .text(p.x, p.y - 26, p.name, {
         fontSize: "14px",
@@ -31,7 +43,7 @@ export class RemotePlayers {
       })
       .setOrigin(0.5, 1)
       .setDepth(4);
-    this.remotes.set(p.id, { sprite, tag, tx: p.x, ty: p.y });
+    this.remotes.set(p.id, { sprite, tag, name: p.name, t0: Date.now(), tx: p.x, ty: p.y });
   }
 
   move(id: string, x: number, y: number): void {
@@ -53,6 +65,14 @@ export class RemotePlayers {
 
   reset(): void {
     for (const id of [...this.remotes.keys()]) this.remove(id);
+  }
+
+  size(): number {
+    return this.remotes.size;
+  }
+
+  spriteOf(id: string): Phaser.GameObjects.Image | null {
+    return this.remotes.get(id)?.sprite ?? null;
   }
 
   update(delta: number): void {

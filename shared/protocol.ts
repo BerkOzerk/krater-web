@@ -4,6 +4,7 @@
 export type ClientMsg =
   | { t: "join"; id: string; name: string }
   | { t: "move"; x: number; y: number }
+  | { t: "react"; to: string; e: string } // emoji tepkisi: hedef oyuncu + emoji
   | { t: "ping" };
 
 export type PlayerState = { id: string; name: string; x: number; y: number };
@@ -12,5 +13,6 @@ export type ServerMsg =
   | { t: "welcome"; you: string; players: PlayerState[] }
   | { t: "join"; p: PlayerState }
   | { t: "move"; id: string; x: number; y: number }
+  | { t: "react"; from: string; to: string; e: string } // balon HEDEFİN üstünde, herkese görünür
   | { t: "leave"; id: string }
   | { t: "pong" };

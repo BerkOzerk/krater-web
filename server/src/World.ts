@@ -69,6 +69,13 @@ export class World {
         this.broadcast({ t: "move", id: a.id, x: m.x, y: m.y }, ws);
         break;
       }
+      case "react": {
+        if (!a.id) return; // join öncesi yok say
+        const IZINLI = new Set(["👋", "❤️", "😮"]);
+        if (!IZINLI.has(m.e) || !m.to) return;
+        this.broadcast({ t: "react", from: a.id, to: m.to, e: m.e });
+        break;
+      }
       case "ping":
         ws.send(JSON.stringify({ t: "pong" } satisfies ServerMsg));
     }

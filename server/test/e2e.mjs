@@ -40,6 +40,14 @@ try {
   await waitFor(b.msgs, (m) => m.t === "move" && m.id === "a", "b, a'nin hareketini gormedi");
   assert(true, "b, a'nin hareketini gordu");
 
+  a.send({ t: "react", to: "b", e: "👋" });
+  await waitFor(
+    b.msgs,
+    (m) => m.t === "react" && m.from === "a" && m.to === "b" && m.e === "👋",
+    "b, a'nin tepkisini gormedi"
+  );
+  assert(true, "b, a'nin tepkisini gordu");
+
   a.ws.close();
   await waitFor(b.msgs, (m) => m.t === "leave" && m.id === "a", "b, a'nin ayrilisini gormedi");
   assert(true, "b, a'nin ayrilisini gordu");

@@ -33,10 +33,6 @@ export class LocalPlayer {
     // depth 10: uzak oyuncuların (1-2) ÜSTÜNDE — aynı spawn'da üst üste binse bile görünür
     this.sprite = scene.add.image(SPAWN.x, SPAWN.y, "player").setOrigin(0.5, 1).setDepth(10);
 
-    scene.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
-      this.target = { x: p.worldX, y: p.worldY };
-    });
-
     const kb = scene.input.keyboard!;
     this.keys = {
       up: kb.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
@@ -48,6 +44,12 @@ export class LocalPlayer {
       s: kb.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       d: kb.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
+  }
+
+  // Tıkla-yürü hedefi — harita görselinin pointerdown'ından çağrılır
+  // (sahne seviyesi değil: uzak oyuncuya tıklamak kart açar, yürüyüş başlatmaz)
+  setTarget(x: number, y: number): void {
+    this.target = { x, y };
   }
 
   update(): void {
