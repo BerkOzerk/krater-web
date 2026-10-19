@@ -70,5 +70,5 @@ Her parti: build doğrula → puppeteer test → deploy → commit.
 - Unity sürümü: `D:/Soft_Garproject/Gar_Projeleri/20210927 Akincilar Krater` (BerkOzerk/akincilar-krater, public) — tek oyunculu YEDEK, dokunma; berkozerk.com/oyunlar/akincilar-krater'de canlı. Harita üretim zinciri orada: `mapdata/` (DXF→PNG+JSON, remap_gb.py, OSM yol katmanı).
 - Mahalle verileri: `D:\Ahmet_Berk_Ozerk\02_Sosyal\Akıncılar 2024`, `Akıncılar Mahallesi Geliştirme Projesi` (dükkan işlevleri için saha verileri).
 - berkozerk.com (Next.js, BerkOzerk/studio — ÖZEL repo): oyun ileride `/oyunlar`'a iframe ile gömülebilir (kapsam dışı).
-- OSM atfı zorunlu: footer + README'de "© OpenStreetMap contributors" (ODbL).
+- OSM katmanı KALDIRILDI (19.10.2026, hizasızlık): yollar planın kendi PL_YOL katmanından geliyor (`mapdata/remap_gb.py --no-osm`). OSM atfı artık yok — geri eklenirse ODbL atfını geri koy.
 - Plan dosyası: `C:\Users\ahmet\.claude\plans\cretsiz-se-eneklerden-bir-ilerleme-effervescent-iverson.md` (M0-M4 + Faz 2/3 ayrıntıları).

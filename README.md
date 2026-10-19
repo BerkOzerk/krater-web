@@ -26,7 +26,7 @@ cd client && npm run build && npx wrangler pages deploy dist --project-name krat
 
 ## Atıf
 
-Haritadaki yol verisi [OpenStreetMap](https://www.openstreetmap.org/copyright) katkıcılarından (© OpenStreetMap contributors, ODbL). Zemin ve bina blokları: Berk Özerk'in kendi plan verileri.
+Harita tamamen Berk Özerk'in kendi plan verilerinden üretilmiştir (Akıncılar 1/1000 ve 1/5000 planları; DXF → piksel pipeline'ı `mapdata/`'da). OSM yol katmanı hizasızlık nedeniyle kaldırıldı (19.10.2026) — yollar planın kendi PL_YOL katmanından geliyor.
 
 ## Bilinen v1 kusurları
 
