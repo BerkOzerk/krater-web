@@ -48,6 +48,9 @@ Tarayıcı otomasyonu (regresyon): `$TEMP/krater-matter-test` içinde puppeteer 
 9. **workers-types v5:** `DurableObject` interface — `extends` YOK, klasik `ctx` alanı deseni. DO sınıfı entrypoint'ten **export edilmeli** (`export { World }`) yoksa wrangler "not exported" hatası.
 10. Üretim soğuk başlatma yavaş → e2e testi sabırlı `waitFor` kullanmalı (300ms sleep'ler yetmez).
 11. **Commit kuralı:** Türkçe ASCII mesaj; `Co-Authored-By` satırı KONMAZ (kullanıcı kuralı).
+12. **Phaser WASD/ok/boşluk yakalaması:** KeyboardPlugin bu tuşları varsayılan yakalar (preventDefault) — DOM input'a bu karakterler HİÇ düşmez ("Ahmet" → "hmet"). Takma ad girişi süresince `input.keyboard.clearCaptures()`, bitince `addCapture([UP,DOWN,LEFT,RIGHT,SPACE,W,A,S,D])` (GameScene'de uygulanıyor).
+13. **DOM overlay ekran koordinatı:** `(world - cam.worldView.x) * zoom` kullan (scroll DEĞİL). `worldView.x = scroll + width/2 - displayWidth/2`. Yanlış formül overlay'leri ekran dışına atar.
+14. **Phaser 3.60+ input'u pencere seviyesinde dinler:** DOM UI (popover butonları vb.) üzerindeki tıklamalar bile `map.on('pointerdown')`'a düşer — kart buton tıklamasının ORTASINDA kapanır. Harita handler'ında `event.target` canvas mı diye guard şart (GameScene'de uygulanıyor).
 
 ## Yol haritası
 
