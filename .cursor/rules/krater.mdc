@@ -1,0 +1,70 @@
+---
+description: Krater projesi kuralları — mimari, komutlar, kritik tuzaklar, yol haritası
+alwaysApply: true
+---
+
+# Krater — Proje El Kitabı (Cursor devraldı: 19.10.2026)
+
+Gerçek Akıncılar mahallesinin (Balıkesir) piksel haritasında yürünebilen, Pokémon Crater tarzı **saf varlık dünyası**: login yok, hesap yok, sohbet yok (v1), NPC yok — oyuncular yürür, birbirini görür, isim etiketleri. "Ajanlar" = gerçek online insanlar. Bütçe $0.
+
+**Canlı:** Oyun `https://krater-web.krater-server.workers.dev` · Sunucu `https://krater-server.krater-server.workers.dev` · Repo `https://github.com/BerkOzerk/krater-web` (PUBLIC — repo'ya gizli YAZMA).
+
+## Mimari
+
+- `client/` — Phaser **3.90** (3'e PİNLİ — npm en güncel 4.2.1 çeker, API farklı) + Vite 6 + TS 5.7 + vite-plugin-pwa. Matter.js fizik (Arcade poligon desteklemez, asla karıştırma). Zemin 2048×1608 PNG (2.6794 px/m, dünya 764.34×600 m), 67 bina bloku `carpisma.json` → `matter.add.fromVertices` (mutlak px, isStatic).
+- `server/` — Cloudflare Workers + **Durable Objects** (Hibernation API). Tek dünya `idFromName("akincilar")`. Hibernation kuralı: DO içinde timer/fetch/storage **YOK**; socket başına durum `serializeAttachment`'ta (join + her move'da yeniden serilenir).
+- `shared/protocol.ts` — yalnız tip; `import type` ile tüketilir (runtime değeri olmaz).
+- Kimlik: localStorage `krater.id` (UUID) + `krater.name`; ilk girişte DOM overlay sorar.
+
+## Komutlar
+
+```bash
+# geliştirme (iki terminal)
+cd client && npm run dev          # http://localhost:5173
+cd server && npm run dev          # ws://127.0.0.1:8787
+# test
+cd server && node test/e2e.mjs    # yerel; üretim: WS_URL="wss://..." node test/e2e.mjs
+# build + deploy (sırayla)
+cd client && npm run build        # ÇIKTIDA "✓ built" GÖRMEDEN DEPLOY ETME
+cd server && npm run deploy       # wrangler deploy
+cd client && npm run deploy       # wrangler pages deploy dist --project-name krater-web
+```
+
+Cloudflare kimliği: API token `D:\Soft_Garproject\Secure\API_Anahtarları\Cloudflare1.txt` (hesap: garprojectadcm@gmail.com, account ID dosyada). Komutta:
+`export CLOUDFLARE_API_TOKEN="$(grep -oE 'cfat_[A-Za-z0-9_]+' 'D:/Soft_Garproject/Secure/API_Anahtarları/Cloudflare1.txt' | head -1)"` — **token'ı komuta/comite GÖMME**.
+
+Tarayıcı otomasyonu (regresyon): `$TEMP/krater-matter-test` içinde puppeteer kurulu — sayfa aç, `window.__krater` kancasıyla sahne durumunu oku, screenshot + PIL piksel analizi (GBC palet eşleşmesi = dünya çiziliyor).
+
+## KRİTİK TUZAKLAR (hepsi gerçekten yaşandı — tekrar etme)
+
+1. **Phaser'da update() içinde fırlayan tek istisna RAF döngüsünü kalıcı öldürür** → siyah ekran. `onReady()` sonrası oluşan alanlara (`remotes`, `net`) optional chaining guard şart.
+2. **Kamera: `scroll + width/2` = ekran merkezinin DÜNYA koordinatı (zoom'suz).** Lerp hedefi `player.x - cam.width/2` olmalı. `width/(2*zoom)` yazarsan kamera oyuncudan uzağa sürüklenir — karakter ekran dışına düşer ("harita var karakter yok" sendromu).
+3. **`pixelArt: true` → Phaser `roundPixels: true`'yu KOŞULSUZ dayatır** (Config'de ezer) → preRender her karede `Math.floor(scroll)` yapıp GERİ YAZAR → kamera hedefe ~7px kala kilitlenir. Kullanma; `antialias: false` + `roundPixels: false` ver (piksel netliği antialias'tan gelir).
+4. **`Graphics.generateTexture` create() içinde (ilk render öncesi) GL'ye yüklenmez** → boş doku. Yerine `textures.createCanvas` + `getContext` + `refresh()`.
+5. **Depth sırası:** yerel oyuncu 10, uzaklar 2, isim etiketleri 4. (Aynı spawn'da üst üste binen eski socket hayaletleri yereli örtebilir.)
+6. **`npm run build 2>&1 | tail` pipe'ı tsc'nin çıkış kodunu YUTAR** (tail 0 döner) — build başarısızken eski `dist/` deploy edilebilir. Build'i `grep "✓ built"` ile doğrula.
+7. **Windows:** TaskStop, npx-wrangler'ın workerd çocuğunu öldürmez; port takılıysa node+workerd'leri PowerShell `Stop-Process` ile temizle. Port çakışınca `wrangler dev` sessizce 8788'e geçer — client config 8787 bekler.
+8. **CF free plan:** 100k istek/gün; **100 sn WS idle timeout** → client 30 sn'de bir ping atar (Net.startHeartbeat). WS mesajları 20:1 faturalanır. Deploy DO'ları yeniden başlatır → hareketsiz oyuncu ilk move'a kadar (0,0)'da görünür (bilinen kusur, README'de).
+9. **workers-types v5:** `DurableObject` interface — `extends` YOK, klasik `ctx` alanı deseni. DO sınıfı entrypoint'ten **export edilmeli** (`export { World }`) yoksa wrangler "not exported" hatası.
+10. Üretim soğuk başlatma yavaş → e2e testi sabırlı `waitFor` kullanmalı (300ms sleep'ler yetmez).
+11. **Commit kuralı:** Türkçe ASCII mesaj; `Co-Authored-By` satırı KONMAZ (kullanıcı kuralı).
+
+## Yol haritası
+
+**FAZ 2 — "Canlı şehir" (kullanıcı 6 özelliği de onayladı; sıra):**
+- **F2a:** online sayacı (DOM rozet "N kişi"; protokol değişikliği YOK — `remotes.size + 1`) + oyuncu kartı + tepki balonu (uzak oyuncuya tıkla → DOM popover: isim + "N dk'dır burada" + 3 emoji 👋❤️😮; protokole `{t:"react", to, e}` / `{t:"react", from, e}` eklenir; sunucu attachment id'den hedef socket'i bulup iletir; hedefin üstünde 2 sn Phaser text balonu).
+- **F2b:** yürüme animasyonu (idle/walk 2 kare, createCanvas ile çizilir, ~200ms'de setTexture) + AFK (30 sn hareketsizlik → alpha 0.4 + "uzakta" etiketi; uzaklar için client tarafı son move zamanından — protokol değişikliği YOK).
+- **F2c:** A* yol bulma (`carpisma.json`'dan 8px hücreli yürünebilirlik ızgarası, point-in-polygon; ~80 satır, bağımlılık YOK; hücre merkezleri + görüş hattı kısaltması; tıkla-yürü artık bina etrafından dolanır; WASD iptal).
+Her parti: build doğrula → puppeteer test → deploy → commit.
+
+**FAZ 3 — Dükkan iç mekanları (kullanıcı kararı):** pixel-agents ofisleri gibi, **amacına göre** döşenmiş odalar (bakkal = raf+tezgâh, kahvehane = masalar, berber = koltuk+ayna, gar = gişe+bekleme). Kapılar = pipeline'daki ≤5 m blok boşlukları. Mobilya: GB Studio Buildings (CC BY, `Downloads/_inceleme/`). Arşiv fotoğrafları (D:\Ahmet_Berk_Ozerk\02_Sosyal\Akıncılar Fotoğraflar, 27 dosya) vitrin olarak. Önce tek oyunculu oda; paylaşımlı odalar sonra.
+
+**Ertelenen:** gece/mevsim paleti (remap pipeline'ı hazır — palet haritalı), "başka mahalleler = yeni dünyalar", ses (mobile autoplay), pets/temalar (elenebilir).
+
+## İlgili depolar / veriler
+
+- Unity sürümü: `D:/Soft_Garproject/Gar_Projeleri/20210927 Akincilar Krater` (BerkOzerk/akincilar-krater, public) — tek oyunculu YEDEK, dokunma; berkozerk.com/oyunlar/akincilar-krater'de canlı. Harita üretim zinciri orada: `mapdata/` (DXF→PNG+JSON, remap_gb.py, OSM yol katmanı).
+- Mahalle verileri: `D:\Ahmet_Berk_Ozerk\02_Sosyal\Akıncılar 2024`, `Akıncılar Mahallesi Geliştirme Projesi` (dükkan işlevleri için saha verileri).
+- berkozerk.com (Next.js, BerkOzerk/studio — ÖZEL repo): oyun ileride `/oyunlar`'a iframe ile gömülebilir (kapsam dışı).
+- OSM atfı zorunlu: footer + README'de "© OpenStreetMap contributors" (ODbL).
+- Plan dosyası: `C:\Users\ahmet\.claude\plans\cretsiz-se-eneklerden-bir-ilerleme-effervescent-iverson.md` (M0-M4 + Faz 2/3 ayrıntıları).

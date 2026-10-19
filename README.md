@@ -2,6 +2,8 @@
 
 Balıkesir Akıncılar mahallesinin gerçek haritası üzerinde yürünebilen, Pokémon Crater tarzı çok oyunculu web oyunu. Login yok, hesap yok, NPC yok — saf varlık dünyası: oyuncular yürür, birbirini görür.
 
+> **Geliştirici el kitabı:** `.cursor/rules/krater.mdc` — mimari, komutlar, kritik tuzaklar ve yol haritası orada. Kod değişikliğinden önce oku.
+
 - **Client:** Phaser 3 + TypeScript + Vite (`client/`), Cloudflare Pages'te statik
 - **Sunucu:** Cloudflare Workers + Durable Objects, WebSocket Hibernation API (`server/`) — free tier, $0
 - **Harita:** Akıncılar 1/1000 planından üretilmiş GBC-palet zemin + 67 bina bloku çarpışması (`client/public/assets/`)
