@@ -107,6 +107,43 @@ body {
   background: #ff4444;
 }
 
+/* --- Kalibrasyon paneli (W1, ?kalibrasyon=1) --- */
+#kalib-panel {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 16;
+  color: #eee;
+  font: 12px sans-serif;
+  text-align: center;
+}
+
+#kalib-panel .k-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
+  gap: 4px;
+  margin: 6px 0;
+}
+
+#kalib-panel button {
+  font-size: 14px;
+  padding: 5px;
+  background: #222;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#kalib-panel .k-read,
+#kalib-panel .k-pos {
+  color: #bbb;
+}
+
 /* --- GPS butonu (G1) --- */
 #gps-btn {
   position: fixed;

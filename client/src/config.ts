@@ -30,6 +30,22 @@ export const GPS_FUZZ_M = 10; // gizlilik: konum 10 m'lik ızgaraya nicele
 export const GPS_UTM_OX = 575867.03; // harita çerçevesi (carpisma.json orijiniyle aynı)
 export const GPS_UTM_OY = 4388840.62;
 export const GPS_CAL = { dx: 0, dy: 0 }; // görsel kalibrasyon (metre; kullanıcı doğrularsa ayarlanır)
+export const GPS_CAL_K = 1; // ölçek düzeltmesi (varsayılan 1; çözücü anlamlı bulursa değişir)
+export const NUDGE_KEY = "krater.gps.nudge"; // canlı nudge ofseti (metre; +dx=doğu, +dy=kuzey)
+export const NUDGE_STEP_M = 1;
+
+// Cihaz başına nudge (localStorage) — GPS_CAL'den AYRI: nudge fuzz'dan SONRA uygulanır
+// (ince ayar 1 m'lik adımlarda görünür olsun diye; fuzz gizlilik için GPS'i kaba ızgaralar).
+export function gpsNudge(): { dx: number; dy: number } {
+  let d = { dx: 0, dy: 0 };
+  try {
+    const raw = localStorage.getItem(NUDGE_KEY);
+    if (raw) d = JSON.parse(raw);
+  } catch {
+    /* bozuk JSON yok say */
+  }
+  return d;
+}
 
 export const AFK_MS = 30_000; // bu kadar hareketsizlik = uzakta (F2b)
 export const WALK_ANIM_MS = 200; // 2 karelik yürüme döngüsü periyodu

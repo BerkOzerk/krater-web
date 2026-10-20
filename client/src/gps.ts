@@ -1,4 +1,4 @@
-import { GPS_CAL, GPS_FUZZ_M, GPS_UTM_OX, GPS_UTM_OY, M_H, SCALE, WORLD_H, WORLD_W } from "./config";
+import { GPS_CAL, GPS_CAL_K, GPS_FUZZ_M, GPS_UTM_OX, GPS_UTM_OY, M_H, SCALE, WORLD_H, WORLD_W, gpsNudge } from "./config";
 
 // WGS84 -> UTM 35N ileri dönüşümü (standart formüller; pyproj ile 3 noktada 0.00 m doğrulandı)
 const A = 6378137.0;
@@ -43,9 +43,22 @@ function utm35n(latDeg: number, lonDeg: number): { e: number; n: number } {
 
 export function latLonToPx(lat: number, lon: number): { x: number; y: number } {
   const { e, n } = utm35n(lat, lon);
-  const x = (e - (GPS_UTM_OX + GPS_CAL.dx)) * SCALE;
-  const y = (M_H - (n - (GPS_UTM_OY + GPS_CAL.dy))) * SCALE;
+  // çözücüden (gps_kalibre.py) gelen GPS_CAL + ölçek K — nudge BURAYA girmez
+  const xm = (e - GPS_UTM_OX) * GPS_CAL_K + GPS_CAL.dx;
+  const ym = (n - GPS_UTM_OY) * GPS_CAL_K - GPS_CAL.dy;
+  const x = xm * SCALE;
+  const y = (M_H - ym) * SCALE;
   return { x, y };
+}
+
+// Son konum: fuzz (gizlilik) SONRA nudge (ince ayar — 1 m'lik adımlar görünür)
+function sonPx(lat: number, lon: number): { x: number; y: number } {
+  const p = latLonToPx(lat, lon);
+  const nd = gpsNudge();
+  return {
+    x: fuzz(p.x) + nd.dx * SCALE,
+    y: fuzz(p.y) - nd.dy * SCALE,
+  };
 }
 
 export function insideArea(x: number, y: number): boolean {
@@ -62,6 +75,8 @@ export type GpsState = "off" | "inside" | "outside" | "error";
 
 export class Gps {
   private watchId: number | null = null;
+  private lastLat: number | null = null;
+  private lastLon: number | null = null;
   onFix: ((x: number, y: number, inside: boolean) => void) | null = null;
   onState: ((s: GpsState) => void) | null = null;
 
@@ -72,14 +87,27 @@ export class Gps {
     }
     navigator.geolocation.watchPosition(
       (pos) => {
-        const p = latLonToPx(pos.coords.latitude, pos.coords.longitude);
+        this.lastLat = pos.coords.latitude;
+        this.lastLon = pos.coords.longitude;
+        const p = sonPx(this.lastLat, this.lastLon);
         const inside = insideArea(p.x, p.y);
         this.onState?.(inside ? "inside" : "outside");
-        this.onFix?.(fuzz(p.x), fuzz(p.y), inside);
+        this.onFix?.(p.x, p.y, inside);
       },
       () => this.onState?.("error"),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
+  }
+
+  // Kalibrasyon nudge'ından sonra: son konumu yeni ofsetle anında yeniden uygula.
+  // Noktayı DÖNDÜRÜR — arayan (kalibrasyon paneli) karakteri ışınlayabilir:
+  // yürüyüş hedefi STOP_DIST altındaki küçük adımlarda hiç hareket etmez.
+  eval(): { x: number; y: number; inside: boolean } | null {
+    if (this.lastLat === null || this.lastLon === null) return null;
+    const p = sonPx(this.lastLat, this.lastLon);
+    const inside = insideArea(p.x, p.y);
+    this.onFix?.(p.x, p.y, inside);
+    return { x: p.x, y: p.y, inside };
   }
 
   stop(): void {

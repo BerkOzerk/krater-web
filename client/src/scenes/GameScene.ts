@@ -9,6 +9,7 @@ import { Net } from "../net/ws";
 import { RemotePlayers } from "../net/RemotePlayers";
 import { Social } from "../ui/social";
 import { Gps, GpsState } from "../gps";
+import { Kalibrasyon } from "../ui/kalibrasyon";
 
 export class GameScene extends Phaser.Scene {
   private player!: LocalPlayer;
@@ -19,6 +20,7 @@ export class GameScene extends Phaser.Scene {
   private gps!: Gps;
   private gpsMode: GpsState = "off";
   private debugG: Phaser.GameObjects.Graphics | null = null;
+  private kalib: Kalibrasyon | null = null;
   private myId = "";
   private myName = "";
   private lastSend = 0;
@@ -118,6 +120,19 @@ export class GameScene extends Phaser.Scene {
       (pid) => (pid === this.myId ? this.player.sprite : (this.remotes?.spriteOf(pid) ?? null))
     );
     this.social.setCount(1);
+
+    // W1: ?kalibrasyon=1 → canlı nudge paneli (GPS ofseti, localStorage)
+    if (new URLSearchParams(location.search).has("kalibrasyon")) {
+      this.kalib = new Kalibrasyon(
+        () => {
+          // ofset değişince son GPS konumunu yeni ofsetle anında yeniden uygula;
+          // kalibrasyonda karakter IŞINLANIR (küçük adımlar STOP_DIST'e takılır)
+          const p = this.gps?.eval();
+          if (p && p.inside && this.gpsMode === "inside") this.teleport(p.x, p.y);
+        },
+        () => ({ x: this.player.body.position.x, y: this.player.body.position.y })
+      );
+    }
 
     // G1: GPS modu — buton aç/kapat; içerideysen gerçek konumda yürü, dışarıdaysan seyirci
     const gpsBtn = document.getElementById("gps-btn")!;
@@ -239,6 +254,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number) {
+    this.kalib?.update();
     this.player.update(delta);
     // remotes yalnızca onReady'den sonra var (takma ad akışı öncesinde update çalışır)
     this.remotes?.update(delta);
