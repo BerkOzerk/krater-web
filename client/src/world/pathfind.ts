@@ -26,10 +26,18 @@ function pointInPoly(x: number, y: number, pts: Pt[]): boolean {
 }
 
 function buildGrid(scene: Phaser.Scene): Uint8Array {
-  const data = scene.cache.json.get("collision") as { polygons: { points: [number, number][] }[] };
+  // W2: engeller artık binalar.json'dan — su poligonları + yürünmez binalar
+  const data = scene.cache.json.get("binalar") as {
+    binalar: { points: [number, number][]; walkable: boolean }[];
+    su: [number, number][][];
+  };
+  const engeller: [number, number][][] = [...data.su];
+  for (const b of data.binalar) {
+    if (!b.walkable) engeller.push(b.points);
+  }
   const grid = new Uint8Array(COLS * ROWS);
-  for (const poly of data.polygons) {
-    const pts: Pt[] = poly.points.map(([x, y]) => ({ x: x * SCALE, y: (M_H - y) * SCALE }));
+  for (const poly of engeller) {
+    const pts: Pt[] = poly.map(([x, y]) => ({ x: x * SCALE, y: (M_H - y) * SCALE }));
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;

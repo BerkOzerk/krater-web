@@ -1,17 +1,22 @@
 import Phaser from "phaser";
 import { M_H, SCALE } from "../config";
 
-type CollisionData = {
+type BinalarData = {
   meta: unknown;
-  polygons: { area_m2: number; points: [number, number][] }[];
+  binalar: { id: number; layer: string; points: [number, number][]; h_m: number; walkable: boolean }[];
+  su: [number, number][][];
 };
 
-// carpisma.json'daki 67 bina blokunu statik Matter poligonlarına çevirir.
-// JSON noktaları: metre, SW köşeden, y YUKARI. PNG: y AŞAĞI → y_px = (M_H - y_m) * SCALE.
+// Kullanıcı kuralı (20.10): her yerde yürünür, SU HARİÇ. Çarpışma = su poligonları.
+// Bina çatıları görseldir; walkable bayrağı ileride "yüksek bina engeli" için hazır bekler.
 export function addCollisions(scene: Phaser.Scene): void {
-  const data = scene.cache.json.get("collision") as CollisionData;
-  for (const poly of data.polygons) {
-    const verts = poly.points.map(([x, y]) => ({ x: x * SCALE, y: (M_H - y) * SCALE }));
+  const data = scene.cache.json.get("binalar") as BinalarData;
+  const engeller: [number, number][][] = [...data.su];
+  for (const b of data.binalar) {
+    if (!b.walkable) engeller.push(b.points);
+  }
+  for (const poly of engeller) {
+    const verts = poly.map(([x, y]) => ({ x: x * SCALE, y: (M_H - y) * SCALE }));
     scene.matter.add.fromVertices(0, 0, verts, { isStatic: true, frictionStatic: 0 });
   }
 }

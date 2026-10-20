@@ -96,7 +96,7 @@ body {
   content: "";
   position: absolute;
   inset: 4px 5px;
-  background: url("/assets/harita_zemin_gb.png") center / 160px 126px no-repeat;
+  background: url("/assets/harita_zemin_b.png") center / 160px 126px no-repeat;
   image-rendering: pixelated;
 }
 
@@ -142,6 +142,35 @@ body {
 #kalib-panel .k-read,
 #kalib-panel .k-pos {
   color: #bbb;
+}
+
+/* --- Kapı istemi + iç mekan çıkışı (W3) --- */
+#door-prompt {
+  position: fixed;
+  font: 13px sans-serif;
+  color: #eee;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #666;
+  border-radius: 10px;
+  padding: 4px 10px;
+  z-index: 8;
+  cursor: pointer;
+  transform: translate(-50%, -130%);
+}
+
+#exit-btn {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  font: 14px sans-serif;
+  color: #eee;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid #666;
+  border-radius: 10px;
+  padding: 6px 16px;
+  z-index: 1100;
+  cursor: pointer;
 }
 
 /* --- GPS butonu (G1) --- */

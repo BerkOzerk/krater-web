@@ -10,6 +10,8 @@ import { RemotePlayers } from "../net/RemotePlayers";
 import { Social } from "../ui/social";
 import { Gps, GpsState } from "../gps";
 import { Kalibrasyon } from "../ui/kalibrasyon";
+import { Door, loadDoors, nearestDoor } from "../world/doors";
+import { Interior } from "../world/interior";
 
 export class GameScene extends Phaser.Scene {
   private player!: LocalPlayer;
@@ -21,6 +23,11 @@ export class GameScene extends Phaser.Scene {
   private gpsMode: GpsState = "off";
   private debugG: Phaser.GameObjects.Graphics | null = null;
   private kalib: Kalibrasyon | null = null;
+  private doors: Door[] = [];
+  private interior = new Interior();
+  private doorPromptEl!: HTMLElement;
+  private exitBtnEl!: HTMLElement;
+  private nearDoor: Door | null = null;
   private myId = "";
   private myName = "";
   private lastSend = 0;
@@ -31,8 +38,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("map", "assets/harita_zemin_gb.png");
-    this.load.json("collision", "assets/carpisma.json");
+    this.load.image("map", "assets/harita_zemin_b.png");
+    this.load.json("binalar", "assets/binalar.json");
+    this.load.json("doors", "assets/kapilar.json");
   }
 
   create() {
@@ -74,6 +82,13 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new LocalPlayer(this);
     this.minimap = new Minimap();
+    this.doors = loadDoors(this);
+    this.doorPromptEl = document.getElementById("door-prompt")!;
+    this.exitBtnEl = document.getElementById("exit-btn")!;
+    this.doorPromptEl.addEventListener("click", () => {
+      if (this.nearDoor) this.enterInterior(this.nearDoor);
+    });
+    this.exitBtnEl.addEventListener("click", () => this.exitInterior());
 
     // Tıkla-yürü: HARİTA görseline bağlı — uzak oyuncuya tıklamak yürüyüş başlatmaz,
     // o tıklamayı sprite'ın kendi interaktif alanı (oyuncu kartı) yakalar.
@@ -87,6 +102,7 @@ export class GameScene extends Phaser.Scene {
       // yoksa kart, buton tıklamasının ortasında kapanır ve buton hiç çalışmaz.
       const t = (p.event as PointerEvent | undefined)?.target as Node | undefined;
       if (t && t !== this.game.canvas && !this.game.canvas.contains(t)) return;
+      if (this.interior.active) return; // iç mekanda dünya tıklaması kapalı
       this.social.closePopover();
       if (this.gpsMode === "inside") return; // GPS modunda elle yürüyüş kapalı
       this.player.setTargetWithPath(p.worldX, p.worldY); // F2c: A* ile dolan
@@ -151,6 +167,7 @@ export class GameScene extends Phaser.Scene {
     };
     let gpsPrevInside = false;
     this.gps.onFix = (x, y, inside) => {
+      if (this.interior.active) return; // iç mekandayken GPS konum uygulama
       if (inside) {
         if (this.player.sprite.visible === false) this.player.sprite.setVisible(true);
         if (!gpsPrevInside) this.teleport(x, y); // ilk giriş: gerçek konumda belir
@@ -197,6 +214,22 @@ export class GameScene extends Phaser.Scene {
         this.onReady();
       });
     }
+  }
+
+  private enterInterior(door: Door): void {
+    this.interior.enter(this, door);
+    this.player.frozen = true;
+    this.player.setTarget(door.x, door.y); // hedef temizliği (yürüyüş durur)
+    this.nearDoor = null;
+    this.doorPromptEl.hidden = true;
+    this.exitBtnEl.hidden = false;
+  }
+
+  private exitInterior(): void {
+    this.interior.exit(this);
+    this.player.frozen = false;
+    this.exitBtnEl.hidden = true;
+    if (this.gpsMode === "inside") this.gps.eval(); // gerçek konuma dönüş
   }
 
   private teleport(x: number, y: number): void {
@@ -258,6 +291,23 @@ export class GameScene extends Phaser.Scene {
     this.player.update(delta);
     // remotes yalnızca onReady'den sonra var (takma ad akışı öncesinde update çalışır)
     this.remotes?.update(delta);
+
+    // W3: kapı yakınlığı + "Gir" istemi (worldView formülü!)
+    if (!this.interior.active && this.gpsMode !== "outside") {
+      const b = this.player.body;
+      this.nearDoor = nearestDoor(this.doors, b.position.x, b.position.y);
+    } else {
+      this.nearDoor = null;
+    }
+    this.doorPromptEl.hidden = this.nearDoor === null;
+    if (this.nearDoor) {
+      const cam0 = this.cameras.main;
+      this.doorPromptEl.style.left = (this.nearDoor.x - cam0.worldView.x) * cam0.zoom + "px";
+      this.doorPromptEl.style.top = (this.nearDoor.y - cam0.worldView.y) * cam0.zoom + "px";
+    }
+
+    // İç mekandayken: kamera kapıda kilitli, dünya katmanları odanın arkasında çalışır
+    if (this.interior.active) return;
 
     // F2c: ?debug=1 ise son yolu çiz
     if (this.debugG && this.player.lastPath.length > 1) {

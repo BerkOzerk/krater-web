@@ -26,6 +26,7 @@ export class LocalPlayer {
   private lastActive = Date.now();
   private waypoints: { x: number; y: number }[] = [];
   lastPath: { x: number; y: number }[] = []; // ?debug=1 çizimi için
+  frozen = false; // iç mekandayken: gövde kapıda sabit (diğerleri seni kapıda görür)
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -79,6 +80,11 @@ export class LocalPlayer {
   }
 
   update(delta: number): void {
+    if (this.frozen) {
+      this.scene.matter.setVelocity(this.body, 0, 0);
+      this.sprite.setPosition(this.body.position.x, this.body.position.y);
+      return;
+    }
     const k = this.keys;
     let dx = 0;
     let dy = 0;
