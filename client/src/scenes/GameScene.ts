@@ -301,6 +301,8 @@ export class GameScene extends Phaser.Scene {
     }
     this.doorPromptEl.hidden = this.nearDoor === null;
     if (this.nearDoor) {
+      // "Gir" yerine mekanın adı (kullanıcı isteği)
+      this.doorPromptEl.textContent = "🚪 " + this.nearDoor.baslik;
       const cam0 = this.cameras.main;
       this.doorPromptEl.style.left = (this.nearDoor.x - cam0.worldView.x) * cam0.zoom + "px";
       this.doorPromptEl.style.top = (this.nearDoor.y - cam0.worldView.y) * cam0.zoom + "px";

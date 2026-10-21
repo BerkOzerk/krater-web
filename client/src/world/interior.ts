@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { Door } from "./doors";
+import { tipAdi, type Door } from "./doors";
 
 const TILE = 16;
 const ROOM_W = 12; // karo
@@ -59,6 +59,19 @@ export class Interior {
       })
       .setOrigin(0.5, 1);
     room.add(baslik);
+    // tür satırı: odanın içinde, üst duvarın altında
+    const tip = tipAdi(door.tip);
+    if (tip) {
+      const tipText = scene.add
+        .text(door.x, door.y - ROOM_H * TILE + 12, tip, {
+          fontSize: "12px",
+          color: "#cccccc",
+          stroke: "#000000",
+          strokeThickness: 2,
+        })
+        .setOrigin(0.5, 0);
+      room.add(tipText);
+    }
     this.room = room;
 
     cam.centerOn(door.x, door.y);

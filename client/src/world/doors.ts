@@ -1,7 +1,33 @@
 import Phaser from "phaser";
 import { M_H, SCALE, SPAWN } from "../config";
 
-export type Door = { id: string; baslik: string; x: number; y: number };
+export type Door = { id: string; baslik: string; x: number; y: number; tip?: string };
+
+// OSM tipi -> Türkçe etiket (iç mekanda tür satırı)
+const TIP_AD: Record<string, string> = {
+  cafe: "Kafe",
+  pharmacy: "Eczane",
+  fast_food: "Fast Food",
+  tyres: "Lastik Bayi",
+  convenience: "Tekel / Bakkal",
+  florist: "Çiçekçi",
+  clothes: "Giyim",
+  books: "Kitabevi",
+  jewelry: "Kuyumcu",
+  optician: "Optik",
+  supermarket: "Market",
+  bank: "Banka",
+  atm: "ATM",
+  taxi: "Taksi",
+  marketplace: "Pazar",
+  motorcycle: "Motosiklet",
+  parking: "Otopark",
+  restaurant: "Restoran",
+};
+
+export function tipAdi(tip?: string): string {
+  return tip ? (TIP_AD[tip] ?? tip) : "";
+}
 
 export const DOOR_RADIUS_PX = 26; // ~10 m
 
@@ -12,12 +38,13 @@ export const DOOR_RADIUS_PX = 26; // ~10 m
 export function loadDoors(scene: Phaser.Scene): Door[] {
   const kapilar: Door[] = [{ id: "gar", baslik: "Gar", x: SPAWN.x, y: SPAWN.y }];
   const data = scene.cache.json.get("doors") as {
-    kapilar?: { blok: number; x_m: number; y_m: number; baslik?: string }[];
+    kapilar?: { blok: number; x_m: number; y_m: number; baslik?: string; tip?: string }[];
   };
   for (const k of data?.kapilar ?? []) {
     kapilar.push({
       id: `k${k.blok}`,
       baslik: k.baslik ?? "Bina",
+      tip: k.tip,
       x: k.x_m * SCALE,
       y: (M_H - k.y_m) * SCALE,
     });
