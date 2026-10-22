@@ -38,7 +38,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("map", "assets/harita_zemin_c.png");
+    this.load.image("map", "assets/harita_zemin_d.png");
     this.load.json("binalar", "assets/binalar.json");
     this.load.json("doors", "assets/kapilar_genis.json");
   }

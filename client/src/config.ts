@@ -27,12 +27,13 @@ export const WS_URL = import.meta.env.DEV
 
 // ---- GPS modu (G1) ----
 export const GPS_FUZZ_M = 10; // gizlilik: konum 10 m'lik ızgaraya nicele
-export const GPS_UTM_OX = 575867.03; // harita çerçevesi (carpisma.json orijiniyle aynı)
-export const GPS_UTM_OY = 4388840.62;
-// 22.10.2026 saha ölçümü: kullanıcı 39.6490196, 27.8879975 koordinatında durdu,
-// karakter (749,1193)'te olmalıydı, çerçeve (855.8,699.0) gösteriyordu.
-// Düzeltme: batıya 40 m, güneye 184 m (harita fazla kuzeyde gösteriyormuş).
-export const GPS_CAL = { dx: -40, dy: 184 }; // metre (metre; saha ölçümüyle kalibre)
+// SANATIN GERÇEK ORİJİNİ (22.10 ölçümü): plan çizimi, eski meta'nın iddia ettiği
+// orijinin 40 m doğusunda + 184 m kuzeyinde oturuyor. Tüm katmanlar (GPS, yollar,
+// POI'ler) bu orijine göre çizilir; artık CAL yok.
+export const GPS_UTM_OX = 575907.0;
+export const GPS_UTM_OY = 4389025.0;
+// 22.10.2026: sanatın gerçek orijini GPS_UTM_OX/OY'e taşındı — ayrıca CAL GEREKMEZ.
+export const GPS_CAL = { dx: 0, dy: 0 };
 export const GPS_CAL_K = 1; // ölçek düzeltmesi (varsayılan 1; çözücü anlamlı bulursa değişir)
 export const NUDGE_KEY = "krater.gps.nudge"; // canlı nudge ofseti (metre; +dx=doğu, +dy=kuzey)
 export const NUDGE_STEP_M = 1;

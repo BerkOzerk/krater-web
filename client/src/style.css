@@ -96,7 +96,7 @@ body {
   content: "";
   position: absolute;
   inset: 4px 5px;
-  background: url("/assets/harita_zemin_c.png") center / 160px 126px no-repeat;
+  background: url("/assets/harita_zemin_d.png") center / 160px 126px no-repeat;
   image-rendering: pixelated;
 }
 
