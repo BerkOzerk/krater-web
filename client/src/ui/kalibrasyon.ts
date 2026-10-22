@@ -1,8 +1,9 @@
 import { NUDGE_KEY, NUDGE_STEP_M } from "../config";
 
-// W1: canlı GPS kalibrasyon paneli — ?kalibrasyon=1 ile açılır.
+// W1: canlı GPS kalibrasyon paneli — sağ alttaki ⚙️ düğmesiyle (veya ?kalibrasyon=1 ile) açılır.
 // Ok tuşları karakteri haritada kaydırır; ofset localStorage'a (cihaz başına) yazılır.
 export class Kalibrasyon {
+  private panel: HTMLElement;
   private readEl: HTMLElement;
   private posEl: HTMLElement;
 
@@ -22,8 +23,10 @@ export class Kalibrasyon {
       <div class="k-read" id="k-read">dx=0.0 dy=0.0</div>
       <div class="k-pos" id="k-pos">px=... py=...</div>`;
     document.body.appendChild(panel);
+    this.panel = panel;
     this.readEl = panel.querySelector("#k-read")!;
     this.posEl = panel.querySelector("#k-pos")!;
+    panel.hidden = true;
 
     panel.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => {
@@ -49,6 +52,14 @@ export class Kalibrasyon {
       /* yok say */
     }
     return { dx: 0, dy: 0 };
+  }
+
+  setVisible(v: boolean): void {
+    this.panel.hidden = !v;
+  }
+
+  get visible(): boolean {
+    return !this.panel.hidden;
   }
 
   update(): void {

@@ -137,17 +137,21 @@ export class GameScene extends Phaser.Scene {
     );
     this.social.setCount(1);
 
-    // W1: ?kalibrasyon=1 → canlı nudge paneli (GPS ofseti, localStorage)
+    // W1: canlı nudge paneli — ⚙️ düğmesiyle açılır/kapanır; ?kalibrasyon=1 açık başlatır
+    this.kalib = new Kalibrasyon(
+      () => {
+        // ofset değişince son GPS konumunu yeni ofsetle anında yeniden uygula;
+        // kalibrasyonda karakter IŞINLANIR (küçük adımlar STOP_DIST'e takılır)
+        const p = this.gps?.eval();
+        if (p && p.inside && this.gpsMode === "inside") this.teleport(p.x, p.y);
+      },
+      () => ({ x: this.player.body.position.x, y: this.player.body.position.y })
+    );
+    document.getElementById("kalib-btn")!.addEventListener("click", () => {
+      this.kalib?.setVisible(!this.kalib.visible);
+    });
     if (new URLSearchParams(location.search).has("kalibrasyon")) {
-      this.kalib = new Kalibrasyon(
-        () => {
-          // ofset değişince son GPS konumunu yeni ofsetle anında yeniden uygula;
-          // kalibrasyonda karakter IŞINLANIR (küçük adımlar STOP_DIST'e takılır)
-          const p = this.gps?.eval();
-          if (p && p.inside && this.gpsMode === "inside") this.teleport(p.x, p.y);
-        },
-        () => ({ x: this.player.body.position.x, y: this.player.body.position.y })
-      );
+      this.kalib.setVisible(true);
     }
 
     // G1: GPS modu — buton aç/kapat; içerideysen gerçek konumda yürü, dışarıdaysan seyirci

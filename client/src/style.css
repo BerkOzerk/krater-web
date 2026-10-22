@@ -107,6 +107,21 @@ body {
   background: #ff4444;
 }
 
+/* --- Kalibrasyon açma düğmesi (W1) --- */
+#kalib-btn {
+  position: fixed;
+  top: 48px;
+  left: 10px;
+  font: 14px sans-serif;
+  color: #eee;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 4px 10px;
+  z-index: 6;
+  cursor: pointer;
+}
+
 /* --- Kalibrasyon paneli (W1, ?kalibrasyon=1) --- */
 #kalib-panel {
   position: fixed;
