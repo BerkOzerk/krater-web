@@ -186,7 +186,8 @@ export class GameScene extends Phaser.Scene {
       } else {
         // Dışarıda: karakter yok, Gar önünde park et (başkaları nötr noktada görür)
         this.player.sprite.setVisible(false);
-        this.teleport(SPAWN.x, SPAWN.y);
+        const off = artOff();
+        this.teleport(SPAWN.x + off.x, SPAWN.y + off.y);
         const p = this.player.body.position;
         this.net?.send({ t: "move", x: p.x, y: p.y });
       }

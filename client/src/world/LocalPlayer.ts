@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { AFK_MS, BOX, SPAWN, SPEED, STOP_DIST, WALK_ANIM_MS } from "../config";
+import { AFK_MS, BOX, SPAWN, SPEED, STOP_DIST, WALK_ANIM_MS, artOff } from "../config";
 import { findPath } from "./pathfind";
 
 type Keys = {
@@ -30,7 +30,11 @@ export class LocalPlayer {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    this.body = scene.matter.add.rectangle(SPAWN.x, SPAWN.y, BOX, BOX, {
+    // spawn, sanat ofsetiyle birlikte kayar (Gar onu sanatta neredeyse orada dogulur)
+    const off = artOff();
+    const sx = SPAWN.x + off.x;
+    const sy = SPAWN.y + off.y;
+    this.body = scene.matter.add.rectangle(sx, sy, BOX, BOX, {
       friction: 0,
       frictionStatic: 0,
       frictionAir: 0,
@@ -39,7 +43,7 @@ export class LocalPlayer {
     this.body.inertia = Infinity; // dönme yok
 
     // depth 10: uzak oyuncuların (1-2) ÜSTÜNDE — aynı spawn'da üst üste binse bile görünür
-    this.sprite = scene.add.image(SPAWN.x, SPAWN.y, "player").setOrigin(0.5, 1).setDepth(10);
+    this.sprite = scene.add.image(sx, sy, "player").setOrigin(0.5, 1).setDepth(10);
 
     const kb = scene.input.keyboard!;
     this.keys = {
