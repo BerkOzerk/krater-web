@@ -53,7 +53,9 @@ export function gpsNudge(): { dx: number; dy: number } {
 
 export const AFK_MS = 30_000; // bu kadar hareketsizlik = uzakta (F2b)
 export const ART_KEY = "krater.art.offset"; // harita sanati kalibrasyon ofseti (px, localStorage)
-export const ART_OFF = { x: 0, y: 0 }; // kalici deger (kullanici olcumunden sonra buraya islenir)
+// 22.10.2026 kullanici saha kalibrasyonu (telefon panelinden kopyalandi):
+// sanat -120 px batiya, -291 px kuzeye (yollar referans) = ~(-44.8 m, -108.6 m)
+export const ART_OFF = { x: -120, y: -291 }; // kalici deger — sabitlendi
 
 // Harita sanati ofseti: varsayilan (ART_OFF) + cihaz basina localStorage duzeltmesi.
 // Yollar ve GPS SABİT kalir; yalnizca sanat + 3D + carpisma + kapilar bu ofsetle kayar.
