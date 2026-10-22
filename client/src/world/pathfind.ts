@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { M_H, SCALE, WORLD_H, WORLD_W } from "../config";
+import { M_H, SCALE, WORLD_H, WORLD_W, artOff } from "../config";
 
 // F2c: A* yol bulma — carpisma.json poligonlarından engel ızgarası kurulur.
 // Bağımlılık yok; harita küçük olduğu için basit A* (lineer open-list taraması) yeterli.
@@ -35,9 +35,10 @@ function buildGrid(scene: Phaser.Scene): Uint8Array {
   for (const b of data.binalar) {
     if (!b.walkable) engeller.push(b.points);
   }
+  const off = artOff(); // sanat kalibrasyonu
   const grid = new Uint8Array(COLS * ROWS);
   for (const poly of engeller) {
-    const pts: Pt[] = poly.map(([x, y]) => ({ x: x * SCALE, y: (M_H - y) * SCALE }));
+    const pts: Pt[] = poly.map(([x, y]) => ({ x: x * SCALE + off.x, y: (M_H - y) * SCALE + off.y }));
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
@@ -65,9 +66,12 @@ function buildGrid(scene: Phaser.Scene): Uint8Array {
 }
 
 function ensureGrid(scene: Phaser.Scene): Uint8Array {
-  if (!blocked || builtFor !== scene.game.config.renderType.toString()) {
+  // ofset degisince izgara yeniden kurulur (cache anahtari ofseti icerir)
+  const off = artOff();
+  const key = `${scene.game.config.renderType}:${off.x},${off.y}`;
+  if (!blocked || builtFor !== key) {
     blocked = buildGrid(scene);
-    builtFor = scene.game.config.renderType.toString();
+    builtFor = key;
   }
   return blocked;
 }

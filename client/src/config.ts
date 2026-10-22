@@ -52,4 +52,19 @@ export function gpsNudge(): { dx: number; dy: number } {
 }
 
 export const AFK_MS = 30_000; // bu kadar hareketsizlik = uzakta (F2b)
+export const ART_KEY = "krater.art.offset"; // harita sanati kalibrasyon ofseti (px, localStorage)
+export const ART_OFF = { x: 0, y: 0 }; // kalici deger (kullanici olcumunden sonra buraya islenir)
+
+// Harita sanati ofseti: varsayilan (ART_OFF) + cihaz basina localStorage duzeltmesi.
+// Yollar ve GPS SABİT kalir; yalnizca sanat + 3D + carpisma + kapilar bu ofsetle kayar.
+export function artOff(): { x: number; y: number } {
+  let d = { x: 0, y: 0 };
+  try {
+    const raw = localStorage.getItem(ART_KEY);
+    if (raw) d = JSON.parse(raw);
+  } catch {
+    /* yok say */
+  }
+  return { x: ART_OFF.x + d.x, y: ART_OFF.y + d.y };
+}
 export const WALK_ANIM_MS = 200; // 2 karelik yürüme döngüsü periyodu

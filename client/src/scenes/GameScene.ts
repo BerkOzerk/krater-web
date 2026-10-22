@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CAM_LERP, SPAWN, VIEW_H, WORLD_H, WORLD_W, WS_URL } from "../config";
+import { CAM_LERP, SPAWN, VIEW_H, WORLD_H, WORLD_W, WS_URL, artOff } from "../config";
 import type { ServerMsg } from "../../../shared/protocol";
 import { addCollisions } from "../world/Collisions";
 import { LocalPlayer } from "../world/LocalPlayer";
@@ -28,6 +28,8 @@ export class GameScene extends Phaser.Scene {
   private doorPromptEl!: HTMLElement;
   private exitBtnEl!: HTMLElement;
   private nearDoor: Door | null = null;
+  private artImg!: Phaser.GameObjects.Image;
+  private collBodies: MatterJS.BodyType[] = [];
   private myId = "";
   private myName = "";
   private lastSend = 0;
@@ -38,14 +40,18 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("map", "assets/harita_zemin_d.png");
+    this.load.image("map", "assets/harita_zemin_d.png"); // sanat + 3D (kalibre edilebilir)
+    this.load.image("yollar", "assets/harita_zemin_yollar.png"); // SABİT katman
     this.load.json("binalar", "assets/binalar.json");
     this.load.json("doors", "assets/kapilar_genis.json");
   }
 
   create() {
-    const map = this.add.image(0, 0, "map").setOrigin(0, 0);
-    addCollisions(this);
+    const off0 = artOff();
+    this.artImg = this.add.image(off0.x, off0.y, "map").setOrigin(0, 0); // sanat ofsetle
+    this.add.image(0, 0, "yollar").setOrigin(0, 0).setDepth(1); // yollar SABİT
+    const map = this.artImg;
+    this.collBodies = addCollisions(this);
 
     // Yer tutucu dokular: kırmızı = yerel, açık = uzak (tint ile renklenecek).
     // DİKKAT: Graphics.generateTexture create() içinde (ilk render öncesi) GL'ye
@@ -145,6 +151,7 @@ export class GameScene extends Phaser.Scene {
         const p = this.gps?.eval();
         if (p && p.inside && this.gpsMode === "inside") this.teleport(p.x, p.y);
       },
+      () => this.applyArtOffset(), // Harita modu: sanat+3D+çarpışma+kapılar kayar
       () => ({ x: this.player.body.position.x, y: this.player.body.position.y })
     );
     document.getElementById("kalib-btn")!.addEventListener("click", () => {
@@ -218,6 +225,16 @@ export class GameScene extends Phaser.Scene {
         this.onReady();
       });
     }
+  }
+
+  // Sanat kalibrasyonu uygula: sanat görüntüsü + çarpışma + kapılar birlikte kayar
+  // (yollar ve GPS sabit). Kullanıcı ofseti kopyalar → ART_OFF'a işlenip sabitlenir.
+  private applyArtOffset(): void {
+    const off = artOff();
+    this.artImg.setPosition(off.x, off.y);
+    if (this.collBodies.length) this.matter.world.remove(this.collBodies);
+    this.collBodies = addCollisions(this);
+    this.doors = loadDoors(this);
   }
 
   private enterInterior(door: Door): void {

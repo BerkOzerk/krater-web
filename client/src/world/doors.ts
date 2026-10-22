@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { M_H, SCALE, SPAWN } from "../config";
+import { M_H, SCALE, SPAWN, artOff } from "../config";
 
 export type Door = { id: string; baslik: string; x: number; y: number; tip?: string };
 
@@ -36,7 +36,8 @@ export const DOOR_RADIUS_PX = 26; // ~10 m
 // Kullanıcı davranışı: "bir binaya giriş → o dükkanın katı" — dükkan isimleri
 // sonra elle/mülki veriyle değişir.
 export function loadDoors(scene: Phaser.Scene): Door[] {
-  const kapilar: Door[] = [{ id: "gar", baslik: "Gar", x: SPAWN.x, y: SPAWN.y }];
+  const off = artOff(); // sanat kalibrasyonu: kapilar sanatla birlikte kayar
+  const kapilar: Door[] = [{ id: "gar", baslik: "Gar", x: SPAWN.x + off.x, y: SPAWN.y + off.y }];
   const data = scene.cache.json.get("doors") as {
     kapilar?: { blok: number; x_m: number; y_m: number; baslik?: string; tip?: string }[];
   };
@@ -45,8 +46,8 @@ export function loadDoors(scene: Phaser.Scene): Door[] {
       id: `k${k.blok}`,
       baslik: k.baslik ?? "Bina",
       tip: k.tip,
-      x: k.x_m * SCALE,
-      y: (M_H - k.y_m) * SCALE,
+      x: k.x_m * SCALE + off.x,
+      y: (M_H - k.y_m) * SCALE + off.y,
     });
   }
   return kapilar;
